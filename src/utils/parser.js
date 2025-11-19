@@ -1,4 +1,4 @@
-const vscode = require("vscode");
+import * as vscode from "vscode";
 
 /**
  * Extract string at cursor position
@@ -113,7 +113,7 @@ function getStringRangeAtPosition(position, line, character) {
 	return null;
 }
 
-module.exports = {
+export {
 	extractStringAtPosition,
 	extractNumberAtPosition,
 	getNumberRangeAtPosition,

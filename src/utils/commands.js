@@ -1,15 +1,14 @@
-const vscode = require("vscode");
-const fs = require("node:fs");
-const path = require("node:path");
-const {
-	getDatabase,
+import fs from "node:fs";
+import path from "node:path";
+import * as vscode from "vscode";
+import {
+	DATABASE_RELOAD_TYPE,
+	getDatabasePath,
 	getIdField,
-	setManualIdField,
 	getRawJsonData,
 	loadDatabase,
 	reindexDatabase,
-	getDatabasePath,
-} = require("./database");
+} from "./database.js";
 
 /**
  * Register the reload database command
@@ -19,12 +18,12 @@ function registerReloadCommand(context) {
 	const reloadCommand = vscode.commands.registerCommand(
 		"hoverLookup.reloadDatabase",
 		() => {
-			const dbPath = getDatabasePath();
-			if (dbPath) {
-				loadDatabase(dbPath);
+			const dbPaths = getDatabasePath();
+			if (dbPaths && dbPaths.length > 0) {
+				loadDatabase(dbPaths, DATABASE_RELOAD_TYPE.MANUAL_RELOAD);
 			} else {
 				vscode.window.showErrorMessage(
-					"HoverLookup: No database file found. Please create a lookup-database.json file in your workspace.",
+					"HoverLookup: No database files found. Please create a lookup-database.json file in your workspace.",
 				);
 			}
 		},
@@ -63,18 +62,17 @@ function registerChangeIdFieldCommand(context) {
 				// Use array if multiple fields, single string if only one
 				const parsedIdField = fields.length === 1 ? fields[0] : fields;
 
-				setManualIdField(parsedIdField);
-
 				const success = reindexDatabase(parsedIdField);
 
 				if (success) {
-					const dbPath = getDatabasePath();
+					const dbPaths = getDatabasePath();
 					const rawJsonData = getRawJsonData();
-					if (dbPath && rawJsonData) {
+					if (dbPaths && dbPaths.length > 0 && rawJsonData) {
 						try {
 							rawJsonData.idField = parsedIdField;
 							const updatedJson = JSON.stringify(rawJsonData, null, 2);
-							fs.writeFileSync(dbPath, updatedJson, "utf8");
+							// Update the first database file
+							fs.writeFileSync(dbPaths[0], updatedJson, "utf8");
 						} catch (error) {
 							vscode.window.showWarningMessage(
 								`ID field changed in memory but couldn't update file: ${error.message}`,
@@ -87,46 +85,6 @@ function registerChangeIdFieldCommand(context) {
 	);
 
 	context.subscriptions.push(changeIdFieldCommand);
-}
-
-/**
- * Register the show lookup command
- * @param {vscode.ExtensionContext} context
- */
-function registerShowLookupCommand(context) {
-	const showLookupCommand = vscode.commands.registerCommand(
-		"hoverLookup.showLookup",
-		async () => {
-			const editor = vscode.window.activeTextEditor;
-			if (!editor) {
-				vscode.window.showWarningMessage("No active editor");
-				return;
-			}
-
-			const selection = editor.selection;
-			const text = editor.document.getText(selection);
-
-			if (!text) {
-				vscode.window.showWarningMessage("No text selected");
-				return;
-			}
-
-			const database = getDatabase();
-			const result = database[text];
-
-			if (result) {
-				const resultJson = JSON.stringify(result, null, 2);
-				vscode.window.showInformationMessage(
-					`Lookup result for "${text}":\n${resultJson}`,
-					{ modal: true },
-				);
-			} else {
-				vscode.window.showWarningMessage(`No result found for "${text}"`);
-			}
-		},
-	);
-
-	context.subscriptions.push(showLookupCommand);
 }
 
 /**
@@ -148,9 +106,10 @@ function registerInitCommand(context) {
 			}
 
 			const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
-			const dbPath = getDatabasePath();
+			const dbPaths = getDatabasePath();
 			const defaultPath = path.join(workspaceRoot, "lookup-database.json");
-			const targetPath = dbPath || defaultPath;
+			const targetPath =
+				dbPaths && dbPaths.length > 0 ? dbPaths[0] : defaultPath;
 
 			// Check if file already exists
 			if (fs.existsSync(targetPath)) {
@@ -168,6 +127,7 @@ function registerInitCommand(context) {
 
 			// Create the example database with mixed object types
 			const exampleDatabase = {
+				version: 1,
 				idField: ["id", "userId", "code"],
 				data: [
 					{
@@ -206,7 +166,7 @@ function registerInitCommand(context) {
 				await vscode.window.showTextDocument(document);
 
 				// Load the database
-				loadDatabase(targetPath);
+				loadDatabase([targetPath]);
 			} catch (error) {
 				vscode.window.showErrorMessage(
 					`HoverLookup: Failed to create database file: ${error.message}`,
@@ -225,14 +185,12 @@ function registerInitCommand(context) {
 function registerAllCommands(context) {
 	registerReloadCommand(context);
 	registerChangeIdFieldCommand(context);
-	registerShowLookupCommand(context);
 	registerInitCommand(context);
 }
 
-module.exports = {
+export {
 	registerAllCommands,
 	registerReloadCommand,
 	registerChangeIdFieldCommand,
-	registerShowLookupCommand,
 	registerInitCommand,
 };

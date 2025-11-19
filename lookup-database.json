@@ -1,20 +1,24 @@
 {
-  "idField": "id",
-  "data": [
-    {
-      "id": 1,
-      "name": "John Doe",
-      "age": 30
-    },
-    {
-      "id": 2,
-      "name": "Jane Smith",
-      "age": 25
+    "version": 1,
+    "idField": ["id", "userId", "code"],
+    "data": [
+      {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "admin"
       },
-    {
-      "id": "abc",
-      "name": "Bob Johnson",
-      "age": 40
-    }
-  ]
+      {
+        "userId": 42,
+        "name": "Jane Smith",
+        "email": "jane@example.com",
+        "department": "Engineering"
+      },
+      {
+        "code": "ORD-2024-001",
+        "status": "shipped",
+        "total": 299.99,
+        "customer": "Acme Corp"
+      }
+    ]
 }

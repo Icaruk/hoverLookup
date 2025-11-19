@@ -2,19 +2,20 @@
 	"name": "hoverlookup",
 	"displayName": "HoverLookup",
 	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"publisher": "Icaruk",
+	"type": "module",
 	"author": {
 		"name": "Icaruk"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/yourusername/hoverlookup"
+		"url": "https://github.com/icaruk/hoverlookup"
 	},
 	"bugs": {
-		"url": "https://github.com/yourusername/hoverlookup/issues"
+		"url": "https://github.com/icaruk/hoverlookup/issues"
 	},
-	"homepage": "https://github.com/yourusername/hoverlookup#readme",
+	"homepage": "https://github.com/icaruk/hoverlookup#readme",
 	"keywords": [
 		"hover",
 		"lookup",
@@ -50,19 +51,59 @@
 			{
 				"command": "hoverLookup.changeIdField",
 				"title": "HoverLookup: Change ID Field"
-			},
-			{
-				"command": "hoverLookup.showLookup",
-				"title": "HoverLookup: Show Lookup for Selection"
 			}
 		],
 		"configuration": {
 			"title": "HoverLookup",
 			"properties": {
-				"hoverLookup.databasePath": {
+				"hoverLookup.databasePaths": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"lookup-database.json"
+					],
+					"description": "Paths to lookup database JSON files (relative to workspace root or absolute paths). Files are searched in order - if a match is found in the first file, subsequent files are not searched."
+				},
+				"hoverLookup.mongodbUrl": {
 					"type": "string",
-					"default": "lookup-database.json",
-					"description": "Path to the lookup database JSON file (relative to workspace root or absolute path)"
+					"default": "mongodb://localhost:27027/?directConnection=true",
+					"description": "MongoDB connection URL (e.g., mongodb://localhost:27017 or mongodb+srv://user:pass@cluster.mongodb.net). Leave empty to disable MongoDB."
+				},
+				"hoverLookup.mongodbDatabases": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "MongoDB database names to search in (e.g., [\"db1\", \"db2\", \"db3\"]). Collections will be searched in each database in order - if a match is found in the first database, subsequent databases are not searched."
+				},
+				"hoverLookup.mongodbCollections": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"collection": {
+								"type": "string",
+								"description": "MongoDB collection name"
+							},
+							"searchFields": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"description": "Fields to use as lookup keys (e.g., [\"id\", \"slug\"]). First match wins."
+							},
+							"project": {
+								"type": "object",
+								"description": "MongoDB projection to select specific fields (e.g., {\"id\": 1, \"name\": 1, \"email\": 1}). Use 1 to include fields, 0 to exclude. Reduces data transfer and memory usage."
+							}
+						},
+						"required": ["collection", "searchFields"]
+					},
+					"default": [],
+					"description": "MongoDB collections to search and their configuration. Example: [{\"collection\": \"users\", \"searchFields\": [\"id\", \"slug\"], \"project\": {\"id\": 1, \"name\": 1}}]"
 				}
 			}
 		}
@@ -70,7 +111,10 @@
 	"scripts": {
 		"lint": "pnpm exec biome check --write src",
 		"prebuild": "pnpm run lint",
-		"build": "vsce package --out dist"
+		"build": "vsce package --out dist --allow-missing-repository"
+	},
+	"dependencies": {
+		"mongodb": "^7.0.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.6",

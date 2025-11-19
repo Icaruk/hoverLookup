@@ -1,15 +1,48 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-const vscode = require("vscode");
-const { loadDatabase, getDatabasePath } = require("./utils/database");
-const { LookupHoverProvider } = require("./providers/hoverProvider");
-const { LookupDebugAdapterTrackerFactory } = require("./adapters/debugAdapter");
-const { registerAllCommands } = require("./utils/commands");
+import * as vscode from "vscode";
+import { LookupDebugAdapterTrackerFactory } from "./adapters/debugAdapter.js";
+import { LookupHoverProvider } from "./providers/hoverProvider.js";
+import { registerAllCommands } from "./utils/commands.js";
+import {
+	getDatabasePath,
+	loadCombinedDatabase,
+	loadDatabase,
+} from "./utils/database.js";
+import { disconnectMongo } from "./utils/mongoDatabase.js";
 
 // ============================================================================
 // ACTIVATION
 // ============================================================================
+
+// Store watchers to clean them up when configuration changes
+let fileWatchers = [];
+
+/**
+ * Setup file watchers for database files
+ * @param {string[]} dbPaths
+ * @param {vscode.ExtensionContext} context
+ */
+function setupFileWatchers(dbPaths, context) {
+	// Clean up existing watchers
+	for (const watcher of fileWatchers) {
+		watcher.dispose();
+	}
+	fileWatchers = [];
+
+	// Create new watchers
+	if (dbPaths && dbPaths.length > 0) {
+		for (const dbPath of dbPaths) {
+			const watcher = vscode.workspace.createFileSystemWatcher(dbPath);
+			watcher.onDidChange(() => {
+				loadDatabase(dbPaths);
+			});
+			fileWatchers.push(watcher);
+			context.subscriptions.push(watcher);
+		}
+	}
+}
 
 /**
  * Activate the extension
@@ -17,14 +50,11 @@ const { registerAllCommands } = require("./utils/commands");
  */
 function activate(context) {
 	// Load database on activation
-	const dbPath = getDatabasePath();
-	if (dbPath) {
-		loadDatabase(dbPath);
-	} else {
-		vscode.window.showWarningMessage(
-			"HoverLookup: No workspace found. Please open a folder and create a lookup-database.json file.",
-		);
+	const dbPaths = getDatabasePath();
+	if (dbPaths && dbPaths.length > 0) {
+		loadCombinedDatabase(dbPaths);
 	}
+	// Note: If no JSON files are configured, MongoDB will be queried on-demand
 
 	// Register hover provider
 	const hoverProvider = vscode.languages.registerHoverProvider(
@@ -41,22 +71,34 @@ function activate(context) {
 	// Register all commands
 	registerAllCommands(context);
 
-	// Watch for database file changes
-	if (dbPath) {
-		const watcher = vscode.workspace.createFileSystemWatcher(dbPath);
-		watcher.onDidChange(() => {
-			loadDatabase(dbPath);
-		});
-		context.subscriptions.push(watcher);
-	}
+	// Setup file watchers
+	setupFileWatchers(dbPaths, context);
+
+	// Watch for configuration changes
+	const configWatcher = vscode.workspace.onDidChangeConfiguration((event) => {
+		if (
+			event.affectsConfiguration("hoverLookup.databasePaths") ||
+			event.affectsConfiguration("hoverLookup.mongodbUrl") ||
+			event.affectsConfiguration("hoverLookup.mongodbCollections") ||
+			event.affectsConfiguration("hoverLookup.mongodbDatabases")
+		) {
+			const newDbPaths = getDatabasePath();
+			if (newDbPaths && newDbPaths.length > 0) {
+				loadCombinedDatabase(newDbPaths);
+				setupFileWatchers(newDbPaths, context);
+			}
+			vscode.window.showInformationMessage(
+				"HoverLookup: Configuration reloaded",
+			);
+		}
+	});
 
 	// Add providers to subscriptions
-	context.subscriptions.push(hoverProvider, debugTrackerFactory);
+	context.subscriptions.push(hoverProvider, debugTrackerFactory, configWatcher);
 }
 
-function deactivate() {}
+async function deactivate() {
+	await disconnectMongo();
+}
 
-module.exports = {
-	activate,
-	deactivate,
-};
+export { activate, deactivate };

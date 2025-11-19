@@ -1,4 +1,5 @@
-const { getDatabase } = require("../utils/database");
+import { getDatabase } from "../utils/database.js";
+import { tooltipTitle } from "../utils/tooltip.js";
 
 /**
  * Debug adapter tracker to intercept and enrich debugger hover responses
@@ -41,9 +42,19 @@ class LookupDebugAdapterTracker {
 					console.log(
 						`[HoverLookup] Debug lookup for "${lookupValue}": ${lookupTime.toFixed(3)}ms`,
 					);
+					
+					const _lookupTime = +lookupTime.toFixed(3);
 
 					const dbInfo = JSON.stringify(dbResult, null, 2);
-					const enrichedResult = `${result}\n\n🔍 Lookup Database (${lookupTime.toFixed(3)}ms):\n${dbInfo}`;
+					
+					const titles = tooltipTitle({
+						word: lookupValue,
+						lookupTimeMs: _lookupTime,
+						source: `MongoDB.${database}`,
+					})
+					
+					const enrichedResult = `${result}\n\n${titles.join("\n")}:\n${dbInfo}`;
+					
 					message.body.result = enrichedResult;
 
 					if (body.variablesReference === 0) {
@@ -64,7 +75,4 @@ class LookupDebugAdapterTrackerFactory {
 	}
 }
 
-module.exports = {
-	LookupDebugAdapterTracker,
-	LookupDebugAdapterTrackerFactory,
-};
+export { LookupDebugAdapterTracker, LookupDebugAdapterTrackerFactory };

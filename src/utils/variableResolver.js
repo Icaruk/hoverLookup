@@ -1,4 +1,4 @@
-const vscode = require("vscode");
+import * as vscode from "vscode";
 
 /**
  * Get variable value from active debugger
@@ -105,7 +105,4 @@ function findVariableValue(document, variableName, currentLine) {
 	}
 }
 
-module.exports = {
-	getValueFromDebugger,
-	findVariableValue,
-};
+export { getValueFromDebugger, findVariableValue };

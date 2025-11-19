@@ -1,15 +1,17 @@
-const vscode = require("vscode");
-const { getDatabase } = require("../utils/database");
-const {
-	extractStringAtPosition,
+import * as vscode from "vscode";
+import { getDatabase } from "../utils/database.js";
+import { searchMongoDatabase } from "../utils/mongoDatabase.js";
+import {
 	extractNumberAtPosition,
+	extractStringAtPosition,
 	getNumberRangeAtPosition,
 	getStringRangeAtPosition,
-} = require("../utils/parser");
-const {
-	getValueFromDebugger,
+} from "../utils/parser.js";
+import {
 	findVariableValue,
-} = require("../utils/variableResolver");
+	getValueFromDebugger,
+} from "../utils/variableResolver.js";
+import { tooltipTitle } from "../utils/tooltip.js";
 
 /**
  * Hover provider for normal code editing (without debugger)
@@ -53,42 +55,76 @@ class LookupHoverProvider {
 			// Measure lookup time
 			const lookupStart = performance.now();
 			let result = database[word];
+			let source = "lookup-database.json";
 			let lookupTime = performance.now() - lookupStart;
 
-			if (!result && isVariable) {
-				const debugValue = await getValueFromDebugger(word);
-				if (debugValue !== null) {
-					const variableLookupStart = performance.now();
-					result = database[String(debugValue)];
-					lookupTime += performance.now() - variableLookupStart;
+			// If not found in JSON database, search in MongoDB
+			if (!result) {
+				const mongoStart = performance.now();
+				const mongoResult = await searchMongoDatabase(word);
+				lookupTime += performance.now() - mongoStart;
+				if (mongoResult) {
+					result = mongoResult.document;
+					source = mongoResult.source;
 				}
+			}
 
-				if (!result && debugValue === null) {
+			if (!result && isVariable) {
+				let debugValue = await getValueFromDebugger(word);
+
+				// If debugger is not active, try static analysis
+				if (debugValue === null) {
 					const variableValue = findVariableValue(
 						document,
 						word,
 						position.line,
 					);
 					if (variableValue !== null) {
-						const variableLookupStart = performance.now();
-						result = database[String(variableValue)];
-						lookupTime += performance.now() - variableLookupStart;
+						debugValue = String(variableValue);
+					}
+				}
+
+				if (debugValue !== null) {
+					const variableLookupStart = performance.now();
+					result = database[String(debugValue)];
+					lookupTime += performance.now() - variableLookupStart;
+
+					// If not found in JSON database, search in MongoDB
+					if (!result) {
+						const mongoStart = performance.now();
+						const mongoResult = await searchMongoDatabase(String(debugValue));
+						lookupTime += performance.now() - mongoStart;
+						if (mongoResult) {
+							result = mongoResult.document;
+							source = mongoResult.source;
+						}
 					}
 				}
 			}
 
 			if (result) {
 				console.log(
-					`[HoverLookup] Lookup for "${word}": ${lookupTime.toFixed(3)}ms`,
+					`[HoverLookup] Lookup for "${word}": ${lookupTime.toFixed(3)}ms (from ${source})`,
 				);
 
 				const markdown = new vscode.MarkdownString();
 				markdown.isTrusted = true;
+				1;
 				markdown.supportHtml = true;
 				markdown.appendMarkdown(`---\n\n`);
-				markdown.appendMarkdown(
-					`**🔍 Database Lookup for \`${word}\`** ⏱️ \`${lookupTime.toFixed(3)}ms\`\n\n`,
-				);
+				
+				const _lookupTime = +lookupTime.toFixed(3);
+				
+				const titles = tooltipTitle({
+					word,
+					lookupTimeMs: _lookupTime,
+					source,
+				})
+				
+				for (const _title of titles) {
+					markdown.appendMarkdown(_title);
+				}
+				
 				markdown.appendCodeblock(JSON.stringify(result, null, 2), "json");
 
 				const hover = hoverRange
@@ -104,6 +140,4 @@ class LookupHoverProvider {
 	}
 }
 
-module.exports = {
-	LookupHoverProvider,
-};
+export { LookupHoverProvider };

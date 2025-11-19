@@ -109,7 +109,6 @@ const order = "ORD-2024-001";  // Hover over "ORD-2024-001" → see order detail
 | **Initialize Database** | Create a new `lookup-database.json` file with example data |
 | **Reload Database** | Manually reload the database from the JSON file |
 | **Change ID Field** | Change lookup field(s). Use comma-separated values for multiple fields (e.g., `id, userId, code`) |
-| **Show Lookup for Selection** | Show database info for selected text |
 
 ---
 

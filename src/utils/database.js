@@ -1,11 +1,10 @@
-const vscode = require("vscode");
-const fs = require("node:fs");
-const path = require("node:path");
+import fs from "node:fs";
+import path from "node:path";
+import * as vscode from "vscode";
 
 let database = {};
 /** @type {string | string[]} */
 let idField = ["id"]; // Now supports array of field names
-let manualIdField = null;
 let rawJsonData = null;
 
 /**
@@ -25,22 +24,6 @@ function getIdField() {
 }
 
 /**
- * Get the manual ID field
- * @returns {string | string[] | null}
- */
-function getManualIdField() {
-	return manualIdField;
-}
-
-/**
- * Set the manual ID field
- * @param {string | string[] | null} field
- */
-function setManualIdField(field) {
-	manualIdField = field;
-}
-
-/**
  * Get the raw JSON data
  * @returns {Object | null}
  */
@@ -48,66 +31,84 @@ function getRawJsonData() {
 	return rawJsonData;
 }
 
+const DATABASE_RELOAD_TYPE = /** @type {const} */ ({
+	INIT: "init",
+	RELOAD: "reload",
+	MANUAL_RELOAD: "manual_reload",
+});
+
 /**
- * Load database from JSON file
- * @param {string} filePath
- * @param {boolean} useManualIdField
+ * Load database from JSON file(s)
+ * @param {string | string[]} filePaths
+ * @param {typeof DATABASE_RELOAD_TYPE[keyof typeof DATABASE_RELOAD_TYPE]} reloadType
  * @returns {boolean}
  */
-function loadDatabase(filePath, useManualIdField = false) {
+function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 	try {
-		if (!fs.existsSync(filePath)) {
-			vscode.window.showErrorMessage(`Database file not found: ${filePath}`);
+		const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+
+		if (paths.length === 0) {
+			// Don't show error if using MongoDB only
 			return false;
 		}
 
-		const fileContent = fs.readFileSync(filePath, "utf8");
-		const jsonData = JSON.parse(fileContent);
-		rawJsonData = jsonData;
+		database = {};
+		let loadedAny = false;
 
-		if (Array.isArray(jsonData.data)) {
-			// Determine which ID field(s) to use
-			if (useManualIdField && manualIdField) {
-				idField = manualIdField;
-			} else if (jsonData.idField) {
-				idField = jsonData.idField;
+		// Load databases in order, merging entries
+		for (const filePath of paths) {
+			if (!fs.existsSync(filePath)) {
+				continue;
 			}
 
-			// Normalize idField to array
-			const idFields = Array.isArray(idField) ? idField : [idField];
+			const fileContent = fs.readFileSync(filePath, "utf8");
+			const jsonData = JSON.parse(fileContent);
+			rawJsonData = jsonData;
 
-			database = {};
-			for (const item of jsonData.data) {
-				// Try each ID field until we find a value
-				for (const field of idFields) {
-					const key = item[field];
-					if (key !== undefined && key !== null) {
-						database[String(key)] = item;
-						break; // Use the first valid field found
+			if (Array.isArray(jsonData.data)) {
+				// Determine which ID field(s) to use
+				if (jsonData.idField) {
+					idField = jsonData.idField;
+				}
+
+				// Normalize idField to array
+				const idFields = Array.isArray(idField) ? idField : [idField];
+
+				for (const item of jsonData.data) {
+					// Try each ID field until we find a value
+					for (const field of idFields) {
+						const key = item[field];
+						if (key !== undefined && key !== null) {
+							// Only add if not already in database (first file wins)
+							if (!(String(key) in database)) {
+								database[String(key)] = item;
+							}
+							break; // Use the first valid field found
+						}
 					}
 				}
+				loadedAny = true;
+			} else {
+				database = jsonData;
+				loadedAny = true;
 			}
+		}
 
-			const count = Object.keys(database).length;
-			const manualNote =
-				useManualIdField && manualIdField ? " (manual override)" : "";
-			const fieldDisplay = Array.isArray(idField)
-				? `[${idField.join(", ")}]`
-				: idField;
-			vscode.window.showInformationMessage(
-				`Lookup database loaded: ${count} entries (idField: ${fieldDisplay})${manualNote}`,
+		if (!loadedAny) {
+			vscode.window.showErrorMessage(
+				`No valid database files found. Use the "Initialize Database" command to create one.`,
 			);
-		} else {
-			database = jsonData;
-			const count = Object.keys(database).length;
-			vscode.window.showInformationMessage(
-				`Lookup database loaded: ${count} entries`,
-			);
+			return false;
+		}
+
+		if (reloadType === DATABASE_RELOAD_TYPE.MANUAL_RELOAD) {
+			vscode.window.showInformationMessage("Database reloaded");
 		}
 
 		return true;
 	} catch (error) {
 		vscode.window.showErrorMessage(`Error loading database: ${error.message}`);
+
 		return false;
 	}
 }
@@ -160,48 +161,65 @@ function reindexDatabase(newIdField) {
 }
 
 /**
- * Get database file path
- * @returns {string | null}
+ * Get database file paths
+ * @returns {string[]}
  */
 function getDatabasePath() {
 	const config = vscode.workspace.getConfiguration("hoverLookup");
-	const configPath = config.get("databasePath");
-
-	if (configPath) {
-		if (path.isAbsolute(configPath)) {
-			return configPath;
-		}
-		if (
-			vscode.workspace.workspaceFolders &&
-			vscode.workspace.workspaceFolders.length > 0
-		) {
-			return path.join(
-				vscode.workspace.workspaceFolders[0].uri.fsPath,
-				configPath,
-			);
-		}
-	}
+	const configPaths = config.get("databasePaths");
+	const paths = [];
 
 	if (
 		vscode.workspace.workspaceFolders &&
 		vscode.workspace.workspaceFolders.length > 0
 	) {
-		return path.join(
-			vscode.workspace.workspaceFolders[0].uri.fsPath,
-			"lookup-database.json",
-		);
+		const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
+
+		if (Array.isArray(configPaths) && configPaths.length > 0) {
+			for (const configPath of configPaths) {
+				if (path.isAbsolute(configPath)) {
+					paths.push(configPath);
+				} else {
+					paths.push(path.join(workspaceRoot, configPath));
+				}
+			}
+		} else {
+			// Fallback to default
+			paths.push(path.join(workspaceRoot, "lookup-database.json"));
+		}
 	}
 
-	return null;
+	return paths;
 }
 
-module.exports = {
+/**
+ * Load database from JSON files (MongoDB is queried on-demand)
+ * @param {string | string[]} filePaths
+ * @param {typeof DATABASE_RELOAD_TYPE[keyof typeof DATABASE_RELOAD_TYPE]} reloadType
+ * @returns {Promise<boolean>}
+ */
+async function loadCombinedDatabase(
+	filePaths,
+	reloadType = DATABASE_RELOAD_TYPE.INIT,
+) {
+	try {
+		// Load JSON files (MongoDB is now queried on-demand in hoverProvider)
+		return loadLocalDatabase(filePaths, reloadType);
+	} catch (error) {
+		vscode.window.showErrorMessage(
+			`Error loading database: ${error.message}`,
+		);
+		return false;
+	}
+}
+
+export {
 	getDatabase,
 	getIdField,
-	getManualIdField,
-	setManualIdField,
 	getRawJsonData,
-	loadDatabase,
+	loadLocalDatabase as loadDatabase,
+	loadCombinedDatabase,
 	reindexDatabase,
 	getDatabasePath,
+	DATABASE_RELOAD_TYPE,
 };

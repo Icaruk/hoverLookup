@@ -43,11 +43,12 @@ With HoverLookup, you **hover** and instantly see:
 - **Dynamic ID field**: Use `id`, `userId`, `code`, `sku`, or any field as your lookup key
 - **Auto-reload**: Database updates automatically when your JSON file changes
 - **Debug integration**: Works seamlessly with VSCode's debugger
+- **MongoDB support**: Query MongoDB collections on-demand (configurable per collection)
 
-### Zero Configuration
+### JSON database
 1. Run `HoverLookup: Initialize Database` command
 2. Add your data to the JSON file
-3. Start hovering—that's it!
+3. Start hovering stuff
 
 ---
 

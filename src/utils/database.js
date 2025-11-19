@@ -6,6 +6,17 @@ let database = {};
 /** @type {string | string[]} */
 let idField = ["id"]; // Now supports array of field names
 let rawJsonData = null;
+/** @type {Map<string, string>} Map of key to source file path */
+let databaseSources = new Map();
+
+/**
+ * Check if JSON database is enabled
+ * @returns {boolean}
+ */
+function isJsonDatabaseEnabled() {
+	const config = vscode.workspace.getConfiguration("hoverLookup");
+	return config.get("enableJsonDatabase") !== false; // Default to true
+}
 
 /**
  * Get the current database
@@ -13,6 +24,15 @@ let rawJsonData = null;
  */
 function getDatabase() {
 	return database;
+}
+
+/**
+ * Get the source file for a given key
+ * @param {string} key
+ * @returns {string | null}
+ */
+function getDatabaseSource(key) {
+	return databaseSources.get(String(key)) || null;
 }
 
 /**
@@ -53,17 +73,21 @@ function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 		}
 
 		database = {};
+		databaseSources.clear();
 		let loadedAny = false;
+		const invalidPaths = [];
 
 		// Load databases in order, merging entries
 		for (const filePath of paths) {
 			if (!fs.existsSync(filePath)) {
+				invalidPaths.push(filePath);
 				continue;
 			}
 
 			const fileContent = fs.readFileSync(filePath, "utf8");
 			const jsonData = JSON.parse(fileContent);
 			rawJsonData = jsonData;
+			const fileName = path.basename(filePath);
 
 			if (Array.isArray(jsonData.data)) {
 				// Determine which ID field(s) to use
@@ -82,6 +106,7 @@ function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 							// Only add if not already in database (first file wins)
 							if (!(String(key) in database)) {
 								database[String(key)] = item;
+								databaseSources.set(String(key), fileName);
 							}
 							break; // Use the first valid field found
 						}
@@ -89,9 +114,33 @@ function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 				}
 				loadedAny = true;
 			} else {
-				database = jsonData;
+				// For flat JSON objects, add all keys
+				for (const key in jsonData) {
+					if (!(String(key) in database)) {
+						database[String(key)] = jsonData[key];
+						databaseSources.set(String(key), fileName);
+					}
+				}
 				loadedAny = true;
 			}
+		}
+
+		// Show warnings for invalid paths
+		if (invalidPaths.length > 0) {
+			const pathsList = invalidPaths.map((p) => `  • ${p}`).join("\n");
+			vscode.window
+				.showWarningMessage(
+					`HoverLookup: ${invalidPaths.length} database file(s) not found:\n${pathsList}\n\nCheck your hoverLookup.databasePaths configuration.`,
+					"Open Settings",
+				)
+				.then((selection) => {
+					if (selection === "Open Settings") {
+						vscode.commands.executeCommand(
+							"workbench.action.openSettings",
+							"hoverLookup.databasePaths",
+						);
+					}
+				});
 		}
 
 		if (!loadedAny) {
@@ -206,15 +255,14 @@ async function loadCombinedDatabase(
 		// Load JSON files (MongoDB is now queried on-demand in hoverProvider)
 		return loadLocalDatabase(filePaths, reloadType);
 	} catch (error) {
-		vscode.window.showErrorMessage(
-			`Error loading database: ${error.message}`,
-		);
+		vscode.window.showErrorMessage(`Error loading database: ${error.message}`);
 		return false;
 	}
 }
 
 export {
 	getDatabase,
+	getDatabaseSource,
 	getIdField,
 	getRawJsonData,
 	loadLocalDatabase as loadDatabase,
@@ -222,4 +270,5 @@ export {
 	reindexDatabase,
 	getDatabasePath,
 	DATABASE_RELOAD_TYPE,
+	isJsonDatabaseEnabled,
 };

@@ -1,24 +1,24 @@
 {
-    "version": 1,
-    "idField": ["id", "userId", "code"],
-    "data": [
-      {
-        "id": 1,
-        "name": "John Doe",
-        "email": "john@example.com",
-        "role": "admin"
-      },
-      {
-        "userId": 42,
-        "name": "Jane Smith",
-        "email": "jane@example.com",
-        "department": "Engineering"
-      },
-      {
-        "code": "ORD-2024-001",
-        "status": "shipped",
-        "total": 299.99,
-        "customer": "Acme Corp"
-      }
-    ]
+	"version": 1,
+	"idField": ["id", "userId", "code"],
+	"data": [
+		{
+			"id": 1,
+			"name": "John Doe",
+			"email": "john@example.com",
+			"role": "admin"
+		},
+		{
+			"userId": 42,
+			"name": "Jane Smith",
+			"email": "jane@example.com",
+			"department": "Engineering"
+		},
+		{
+			"code": "ORD-9876-001",
+			"status": "shipped",
+			"total": 299.99,
+			"customer": "Acme Corp"
+		}
+	]
 }

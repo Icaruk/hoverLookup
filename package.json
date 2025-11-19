@@ -2,7 +2,7 @@
 	"name": "hoverlookup",
 	"displayName": "HoverLookup",
 	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"publisher": "Icaruk",
 	"type": "module",
 	"author": {
@@ -27,6 +27,13 @@
 		"debugger"
 	],
 	"icon": "assets/hoverlookup_logo.png",
+	"scripts": {
+		"up": "podman compose up -d",
+		"down": "podman compose down",
+		"lint": "pnpm exec biome check --write src",
+		"prebuild": "pnpm run lint",
+		"build": "vsce package --out dist --allow-missing-repository"
+	},
 	"engines": {
 		"vscode": "^1.106.0"
 	},
@@ -49,13 +56,39 @@
 				"title": "HoverLookup: Reload Database"
 			},
 			{
-				"command": "hoverLookup.changeIdField",
-				"title": "HoverLookup: Change ID Field"
+				"command": "hoverLookup.reconnectMongoDB",
+				"title": "HoverLookup: Reconnect MongoDB"
+			},
+			{
+				"command": "hoverLookup.toggleLookupJsonDatabase",
+				"title": "HoverLookup: Toggle JSON Database Lookup"
+			},
+			{
+				"command": "hoverLookup.toggleLookupMongoDB",
+				"title": "HoverLookup: Toggle MongoDB Lookup"
+			},
+			{
+				"command": "hoverLookup.clearMongoCache",
+				"title": "HoverLookup: Clear MongoDB Cache"
+			},
+			{
+				"command": "hoverLookup.openSettings",
+				"title": "HoverLookup: Settings"
 			}
 		],
 		"configuration": {
 			"title": "HoverLookup",
 			"properties": {
+				"hoverLookup.enableJsonDatabase": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable or disable JSON database lookups (lookup-database.json files)"
+				},
+				"hoverLookup.enableMongoDB": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable or disable MongoDB lookups"
+				},
 				"hoverLookup.databasePaths": {
 					"type": "array",
 					"items": {
@@ -100,18 +133,23 @@
 								"description": "MongoDB projection to select specific fields (e.g., {\"id\": 1, \"name\": 1, \"email\": 1}). Use 1 to include fields, 0 to exclude. Reduces data transfer and memory usage."
 							}
 						},
-						"required": ["collection", "searchFields"]
+						"required": [
+							"collection",
+							"searchFields"
+						]
 					},
 					"default": [],
 					"description": "MongoDB collections to search and their configuration. Example: [{\"collection\": \"users\", \"searchFields\": [\"id\", \"slug\"], \"project\": {\"id\": 1, \"name\": 1}}]"
+				},
+				"hoverLookup.maxHoverSize": {
+					"type": "number",
+					"default": 5000,
+					"minimum": 1000,
+					"maximum": 50000,
+					"description": "Maximum size (in characters) of the hover tooltip content. Large documents will be truncated. Default: 5000 characters."
 				}
 			}
 		}
-	},
-	"scripts": {
-		"lint": "pnpm exec biome check --write src",
-		"prebuild": "pnpm run lint",
-		"build": "vsce package --out dist --allow-missing-repository"
 	},
 	"dependencies": {
 		"mongodb": "^7.0.0"

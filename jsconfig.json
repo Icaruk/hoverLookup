@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		"module": "esnext",
 		"target": "esnext",
+		"moduleResolution": "node",
 		"checkJs": true,
 	},
 	"exclude": [

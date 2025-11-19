@@ -6,9 +6,15 @@ import {
 	getDatabasePath,
 	getIdField,
 	getRawJsonData,
+	isJsonDatabaseEnabled,
 	loadDatabase,
 	reindexDatabase,
 } from "./database.js";
+import {
+	connectMongo,
+	disconnectMongo,
+	isMongoDBEnabled,
+} from "./mongoDatabase.js";
 
 /**
  * Register the reload database command
@@ -30,61 +36,6 @@ function registerReloadCommand(context) {
 	);
 
 	context.subscriptions.push(reloadCommand);
-}
-
-/**
- * Register the change ID field command
- * @param {vscode.ExtensionContext} context
- */
-function registerChangeIdFieldCommand(context) {
-	const changeIdFieldCommand = vscode.commands.registerCommand(
-		"hoverLookup.changeIdField",
-		async () => {
-			const currentIdField = getIdField();
-			const currentDisplay = Array.isArray(currentIdField)
-				? currentIdField.join(", ")
-				: currentIdField;
-
-			const newIdField = await vscode.window.showInputBox({
-				prompt:
-					"Enter field name(s) to use as ID for lookups (comma-separated for multiple)",
-				value: currentDisplay,
-				placeHolder: "e.g., id, userId, code OR id, code, sku",
-			});
-
-			if (newIdField && newIdField.trim() !== "") {
-				// Parse input: split by comma and trim each field
-				const fields = newIdField
-					.split(",")
-					.map((f) => f.trim())
-					.filter((f) => f !== "");
-
-				// Use array if multiple fields, single string if only one
-				const parsedIdField = fields.length === 1 ? fields[0] : fields;
-
-				const success = reindexDatabase(parsedIdField);
-
-				if (success) {
-					const dbPaths = getDatabasePath();
-					const rawJsonData = getRawJsonData();
-					if (dbPaths && dbPaths.length > 0 && rawJsonData) {
-						try {
-							rawJsonData.idField = parsedIdField;
-							const updatedJson = JSON.stringify(rawJsonData, null, 2);
-							// Update the first database file
-							fs.writeFileSync(dbPaths[0], updatedJson, "utf8");
-						} catch (error) {
-							vscode.window.showWarningMessage(
-								`ID field changed in memory but couldn't update file: ${error.message}`,
-							);
-						}
-					}
-				}
-			}
-		},
-	);
-
-	context.subscriptions.push(changeIdFieldCommand);
 }
 
 /**
@@ -179,18 +130,221 @@ function registerInitCommand(context) {
 }
 
 /**
+ * Register the reconnect MongoDB command
+ * @param {vscode.ExtensionContext} context
+ */
+function registerReconnectMongoDBCommand(context) {
+	const reconnectMongoCommand = vscode.commands.registerCommand(
+		"hoverLookup.reconnectMongoDB",
+		async () => {
+			try {
+				// Disconnect first
+				await disconnectMongo();
+
+				// Try to reconnect
+				const client = await connectMongo();
+				if (client) {
+					vscode.window.showInformationMessage(
+						"HoverLookup: Successfully reconnected to MongoDB",
+					);
+				} else {
+					vscode.window.showWarningMessage(
+						"HoverLookup: MongoDB URL not configured. Set hoverLookup.mongodbUrl in settings.",
+					);
+				}
+			} catch (error) {
+				vscode.window.showErrorMessage(
+					`HoverLookup: Failed to reconnect to MongoDB: ${error.message}`,
+				);
+			}
+		},
+	);
+
+	context.subscriptions.push(reconnectMongoCommand);
+}
+
+/**
+ * Register the toggle JSON database command
+ * @param {vscode.ExtensionContext} context
+ */
+function registerToggleLookupJsonDatabaseCommand(context) {
+	const toggleCommand = vscode.commands.registerCommand(
+		"hoverLookup.toggleLookupJsonDatabase",
+		async () => {
+			const config = vscode.workspace.getConfiguration("hoverLookup");
+			const currentValue = isJsonDatabaseEnabled();
+			const currentStatus = currentValue ? "Enabled" : "Disabled";
+
+			const options = [
+				{
+					label: "$(check) Enable",
+					description: currentValue ? "(current)" : "",
+					value: true,
+				},
+				{
+					label: "$(circle-slash) Disable",
+					description: !currentValue ? "(current)" : "",
+					value: false,
+				},
+			];
+
+			const selected = await vscode.window.showQuickPick(options, {
+				placeHolder: `JSON Database Lookup is currently ${currentStatus}. Select an option:`,
+			});
+
+			if (selected === undefined) {
+				return; // User cancelled
+			}
+
+			if (selected.value === currentValue) {
+				vscode.window.showInformationMessage(
+					`HoverLookup: JSON Database lookup is already ${selected.value ? "enabled" : "disabled"}`,
+				);
+				return;
+			}
+
+			await config.update(
+				"enableJsonDatabase",
+				selected.value,
+				vscode.ConfigurationTarget.Workspace,
+			);
+
+			const status = selected.value ? "enabled" : "disabled";
+			vscode.window.showInformationMessage(
+				`HoverLookup: JSON Database lookup ${status}`,
+			);
+		},
+	);
+
+	context.subscriptions.push(toggleCommand);
+}
+
+/**
+ * Register the toggle MongoDB command
+ * @param {vscode.ExtensionContext} context
+ */
+function registerToggleLookupMongoDBCommand(context) {
+	const toggleCommand = vscode.commands.registerCommand(
+		"hoverLookup.toggleLookupMongoDB",
+		async () => {
+			const config = vscode.workspace.getConfiguration("hoverLookup");
+			const currentValue = isMongoDBEnabled();
+			const currentStatus = currentValue ? "Enabled" : "Disabled";
+
+			const options = [
+				{
+					label: "$(check) Enable",
+					description: currentValue ? "(current)" : "",
+					value: true,
+				},
+				{
+					label: "$(circle-slash) Disable",
+					description: !currentValue ? "(current)" : "",
+					value: false,
+				},
+			];
+
+			const selected = await vscode.window.showQuickPick(options, {
+				placeHolder: `MongoDB Lookup is currently ${currentStatus}. Select an option:`,
+			});
+
+			if (selected === undefined) {
+				return; // User cancelled
+			}
+
+			if (selected.value === currentValue) {
+				vscode.window.showInformationMessage(
+					`HoverLookup: MongoDB lookup is already ${selected.value ? "enabled" : "disabled"}`,
+				);
+				return;
+			}
+
+			await config.update(
+				"enableMongoDB",
+				selected.value,
+				vscode.ConfigurationTarget.Workspace,
+			);
+
+			const status = selected.value ? "enabled" : "disabled";
+			vscode.window.showInformationMessage(
+				`HoverLookup: MongoDB lookup ${status}`,
+			);
+
+			// If disabling, disconnect from MongoDB
+			if (!selected.value) {
+				await disconnectMongo();
+			}
+		},
+	);
+
+	context.subscriptions.push(toggleCommand);
+}
+
+/**
+ * Register the open settings command
+ * @param {vscode.ExtensionContext} context
+ */
+function registerOpenSettingsCommand(context) {
+	const openSettingsCommand = vscode.commands.registerCommand(
+		"hoverLookup.openSettings",
+		() => {
+			// Open VSCode settings and filter by HoverLookup
+			vscode.commands.executeCommand(
+				"workbench.action.openSettings",
+				"@ext:Icaruk.hoverlookup",
+			);
+		},
+	);
+
+	context.subscriptions.push(openSettingsCommand);
+}
+
+/**
+ * Register the clear MongoDB cache command
+ * @param {vscode.ExtensionContext} context
+ */
+function registerClearMongoCacheCommand(context) {
+	const clearCacheCommand = vscode.commands.registerCommand(
+		"hoverLookup.clearMongoCache",
+		async () => {
+			try {
+				const { clearMongoCache } = await import("./mongoDatabase.js");
+				clearMongoCache();
+				vscode.window.showInformationMessage(
+					"HoverLookup: MongoDB cache cleared successfully",
+				);
+			} catch (error) {
+				vscode.window.showErrorMessage(
+					`HoverLookup: Failed to clear MongoDB cache: ${error.message}`,
+				);
+			}
+		},
+	);
+
+	context.subscriptions.push(clearCacheCommand);
+}
+
+/**
  * Register all commands
  * @param {vscode.ExtensionContext} context
  */
 function registerAllCommands(context) {
 	registerReloadCommand(context);
-	registerChangeIdFieldCommand(context);
 	registerInitCommand(context);
+	registerReconnectMongoDBCommand(context);
+	registerToggleLookupJsonDatabaseCommand(context);
+	registerToggleLookupMongoDBCommand(context);
+	registerClearMongoCacheCommand(context);
+	registerOpenSettingsCommand(context);
 }
 
 export {
 	registerAllCommands,
 	registerReloadCommand,
-	registerChangeIdFieldCommand,
 	registerInitCommand,
+	registerReconnectMongoDBCommand as registerReconnectMongoCommand,
+	registerToggleLookupJsonDatabaseCommand,
+	registerToggleLookupMongoDBCommand,
+	registerClearMongoCacheCommand,
+	registerOpenSettingsCommand,
 };

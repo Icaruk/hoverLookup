@@ -4,6 +4,32 @@ import * as vscode from "vscode";
 let mongoClient = null;
 
 /**
+ * In-memory cache for MongoDB results
+ * Used for synchronous lookups during debug hover
+ * @type {Map<string, {document: any, source: string, timestamp: number}>}
+ */
+const mongoCache = new Map();
+
+/**
+ * Maximum cache size (number of entries)
+ */
+const MAX_CACHE_SIZE = 1000;
+
+/**
+ * Cache TTL in milliseconds (default: 1 minute)
+ */
+const CACHE_TTL = 1 * 60 * 1000;
+
+/**
+ * Check if MongoDB is enabled
+ * @returns {boolean}
+ */
+function isMongoDBEnabled() {
+	const config = vscode.workspace.getConfiguration("hoverLookup");
+	return config.get("enableMongoDB") !== false; // Default to true
+}
+
+/**
  * Get MongoDB configuration from VSCode settings
  * @returns {{url: string, databases: Array, collections: Array}}
  */
@@ -28,8 +54,22 @@ async function connectMongo() {
 			return null;
 		}
 
+		// Check if existing connection is still valid
 		if (mongoClient) {
-			return mongoClient;
+			try {
+				// Ping to check if connection is alive
+				await mongoClient.db().admin().ping();
+				return mongoClient;
+			} catch (_error) {
+				// Connection is dead, close it and reconnect
+				console.log("[HoverLookup] MongoDB connection lost, reconnecting...");
+				try {
+					await mongoClient.close();
+				} catch (_closeError) {
+					// Ignore close errors
+				}
+				mongoClient = null;
+			}
 		}
 
 		mongoClient = new MongoClient(url);
@@ -57,11 +97,70 @@ async function disconnectMongo() {
 }
 
 /**
+ * Add a value to the MongoDB cache
+ * @param {string} key - The search value
+ * @param {any} document - The MongoDB document
+ * @param {string} source - The source string (e.g., "MongoDB.database.collection")
+ */
+function addToMongoCache(key, document, source) {
+	// Check if cache is full
+	if (mongoCache.size >= MAX_CACHE_SIZE) {
+		// Remove oldest entry (first entry in Map)
+		const firstKey = mongoCache.keys().next().value;
+		mongoCache.delete(firstKey);
+	}
+
+	mongoCache.set(key, {
+		document,
+		source,
+		timestamp: Date.now(),
+	});
+}
+
+/**
+ * Get a value from the MongoDB cache (synchronous)
+ * @param {string} key - The search value
+ * @returns {{document: any, source: string} | null}
+ */
+function getFromMongoCache(key) {
+	const cached = mongoCache.get(key);
+
+	if (!cached) {
+		return null;
+	}
+
+	// Check if cache entry is expired
+	const age = Date.now() - cached.timestamp;
+	if (age > CACHE_TTL) {
+		mongoCache.delete(key);
+		return null;
+	}
+
+	return {
+		document: cached.document,
+		source: cached.source,
+	};
+}
+
+/**
+ * Clear the MongoDB cache
+ */
+function clearMongoCache() {
+	mongoCache.clear();
+	console.log("[HoverLookup] MongoDB cache cleared");
+}
+
+/**
  * Search for a value in MongoDB collections
  * @param {string} searchValue - The value to search for
  * @returns {Promise<{document: Object, source: string} | null>} - The document and source if found, null otherwise
  */
 async function searchMongoDatabase(searchValue) {
+	// Check if MongoDB is enabled
+	if (!isMongoDBEnabled()) {
+		return null;
+	}
+
 	const client = await connectMongo();
 	if (!client) {
 		return null;
@@ -75,14 +174,19 @@ async function searchMongoDatabase(searchValue) {
 		}
 
 		// If no databases specified, use default database
-		const databasesToSearch = databases && databases.length > 0 ? databases : [null];
+		const databasesToSearch =
+			databases && databases.length > 0 ? databases : [null];
 
 		// Search in each database in order
 		for (const dbName of databasesToSearch) {
 			const db = dbName ? client.db(dbName) : client.db();
 
 			for (const collectionConfig of collections) {
-				const { collection: collectionName, searchFields, project } = collectionConfig;
+				const {
+					collection: collectionName,
+					searchFields,
+					project,
+				} = collectionConfig;
 
 				if (
 					!collectionName ||
@@ -116,6 +220,10 @@ async function searchMongoDatabase(searchValue) {
 						console.log(
 							`[HoverLookup] Found document in MongoDB collection: ${dbDisplay}.${collectionName}`,
 						);
+
+						// Add to cache for future synchronous lookups
+						addToMongoCache(searchValue, document, source);
+
 						return { document, source };
 					}
 				} catch (error) {
@@ -145,4 +253,13 @@ async function loadMongoDatabase() {
 	return {};
 }
 
-export { getMongoConfig, connectMongo, disconnectMongo, loadMongoDatabase, searchMongoDatabase };
+export {
+	getMongoConfig,
+	connectMongo,
+	disconnectMongo,
+	loadMongoDatabase,
+	searchMongoDatabase,
+	isMongoDBEnabled,
+	getFromMongoCache,
+	clearMongoCache,
+};

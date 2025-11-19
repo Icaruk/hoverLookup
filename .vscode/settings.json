@@ -1,0 +1,23 @@
+{
+  "hoverLookup.mongodbUrl": "mongodb://root:root@localhost:27018/?directConnection=true&authSource=admin",
+  "hoverLookup.mongodbDatabases": [
+    "hoverlookup"
+  ],
+  "hoverLookup.mongodbCollections": [
+    {
+      "collection": "users",
+      "searchFields": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    {
+      "collection": "orders",
+      "searchFields": [
+        "id",
+        "user_id"
+      ]
+    }
+  ]
+}

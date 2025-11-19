@@ -46,8 +46,19 @@ function extractNumberAtPosition(line, character) {
 		const end = match.index + match[0].length;
 
 		if (character >= start && character < end) {
-			const numStr = match[0];
-			return numStr.includes(".") ? parseFloat(numStr) : parseInt(numStr, 10);
+			// Check if the number is part of an identifier (variable name)
+			// by checking the characters before and after
+			const charBefore = start > 0 ? line[start - 1] : "";
+			const charAfter = end < line.length ? line[end] : "";
+
+			// If surrounded by identifier characters (letters, _, $), it's part of a variable name
+			const isPartOfIdentifier =
+				/[a-zA-Z_$]/.test(charBefore) || /[a-zA-Z_$]/.test(charAfter);
+
+			if (!isPartOfIdentifier) {
+				const numStr = match[0];
+				return numStr.includes(".") ? parseFloat(numStr) : parseInt(numStr, 10);
+			}
 		}
 
 		match = numberRegex.exec(line);
@@ -72,7 +83,18 @@ function getNumberRangeAtPosition(position, line, character) {
 		const end = match.index + match[0].length;
 
 		if (character >= start && character < end) {
-			return new vscode.Range(position.line, start, position.line, end);
+			// Check if the number is part of an identifier (variable name)
+			// by checking the characters before and after
+			const charBefore = start > 0 ? line[start - 1] : "";
+			const charAfter = end < line.length ? line[end] : "";
+
+			// If surrounded by identifier characters (letters, _, $), it's part of a variable name
+			const isPartOfIdentifier =
+				/[a-zA-Z_$]/.test(charBefore) || /[a-zA-Z_$]/.test(charAfter);
+
+			if (!isPartOfIdentifier) {
+				return new vscode.Range(position.line, start, position.line, end);
+			}
 		}
 
 		match = numberRegex.exec(line);

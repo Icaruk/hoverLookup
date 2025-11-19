@@ -101,7 +101,7 @@
 				},
 				"hoverLookup.mongodbUrl": {
 					"type": "string",
-					"default": "mongodb://localhost:27027/?directConnection=true",
+					"default": "mongodb://localhost:27017/?directConnection=true",
 					"description": "MongoDB connection URL (e.g., mongodb://localhost:27017 or mongodb+srv://user:pass@cluster.mongodb.net). Leave empty to disable MongoDB."
 				},
 				"hoverLookup.mongodbDatabases": {

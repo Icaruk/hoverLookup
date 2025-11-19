@@ -7,7 +7,7 @@ let database = {};
 let idField = ["id"]; // Now supports array of field names
 let rawJsonData = null;
 /** @type {Map<string, string>} Map of key to source file path */
-let databaseSources = new Map();
+const databaseSources = new Map();
 
 /**
  * Check if JSON database is enabled

@@ -51,7 +51,7 @@ function truncateLargeObject(obj, maxLength = null) {
 		_truncated: true,
 		_originalSize: jsonString.length,
 		_message: `⚠️ Document too large (${jsonString.length} chars). Showing first ${maxSize} characters.`,
-		_preview: lines.join("\n") + "\n  ...\n}",
+		_preview: `${lines.join("\n")}\n  ...\n}`,
 	};
 }
 

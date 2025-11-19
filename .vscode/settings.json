@@ -1,4 +1,17 @@
 {
+  // Biome configuration
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  // HoverLookup configuration
   "hoverLookup.mongodbUrl": "mongodb://root:root@localhost:27018/?directConnection=true&authSource=admin",
   "hoverLookup.mongodbDatabases": [
     "hoverlookup"

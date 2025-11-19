@@ -4,11 +4,8 @@ import * as vscode from "vscode";
 import {
 	DATABASE_RELOAD_TYPE,
 	getDatabasePath,
-	getIdField,
-	getRawJsonData,
 	isJsonDatabaseEnabled,
 	loadDatabase,
-	reindexDatabase,
 } from "./database.js";
 import {
 	connectMongo,
@@ -340,11 +337,11 @@ function registerAllCommands(context) {
 
 export {
 	registerAllCommands,
-	registerReloadCommand,
+	registerClearMongoCacheCommand,
 	registerInitCommand,
+	registerOpenSettingsCommand,
 	registerReconnectMongoDBCommand as registerReconnectMongoCommand,
+	registerReloadCommand,
 	registerToggleLookupJsonDatabaseCommand,
 	registerToggleLookupMongoDBCommand,
-	registerClearMongoCacheCommand,
-	registerOpenSettingsCommand,
 };

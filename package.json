@@ -1,0 +1,84 @@
+{
+	"name": "hoverlookup",
+	"displayName": "HoverLookup",
+	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
+	"version": "0.1.0",
+	"publisher": "Icaruk",
+	"author": {
+		"name": "Icaruk"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yourusername/hoverlookup"
+	},
+	"bugs": {
+		"url": "https://github.com/yourusername/hoverlookup/issues"
+	},
+	"homepage": "https://github.com/yourusername/hoverlookup#readme",
+	"keywords": [
+		"hover",
+		"lookup",
+		"database",
+		"tooltip",
+		"id",
+		"code",
+		"reference",
+		"debugger"
+	],
+	"icon": "assets/hoverlookup_logo.png",
+	"engines": {
+		"vscode": "^1.106.0"
+	},
+	"categories": [
+		"Other",
+		"Debuggers"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./src/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "hoverLookup.initDatabase",
+				"title": "HoverLookup: Initialize Database"
+			},
+			{
+				"command": "hoverLookup.reloadDatabase",
+				"title": "HoverLookup: Reload Database"
+			},
+			{
+				"command": "hoverLookup.changeIdField",
+				"title": "HoverLookup: Change ID Field"
+			},
+			{
+				"command": "hoverLookup.showLookup",
+				"title": "HoverLookup: Show Lookup for Selection"
+			}
+		],
+		"configuration": {
+			"title": "HoverLookup",
+			"properties": {
+				"hoverLookup.databasePath": {
+					"type": "string",
+					"default": "lookup-database.json",
+					"description": "Path to the lookup database JSON file (relative to workspace root or absolute path)"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"lint": "pnpm exec biome check --write src",
+		"prebuild": "pnpm run lint",
+		"build": "vsce package --out dist"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.6",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "24.10.1",
+		"@types/vscode": "^1.106.1",
+		"@vscode/test-cli": "^0.0.12",
+		"@vscode/test-electron": "^2.5.2",
+		"eslint": "^9.39.1"
+	}
+}

@@ -1,0 +1,17 @@
+.vscode/**
+.vscode-test/**
+test/**
+node_modules/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/jsconfig.json
+**/*.map
+**/eslint.config.mjs
+**/.vscode-test.*
+**/biome.json
+test-simple.js
+lookup-database.json
+pnpm-lock.yaml
+.DS_Store
+*.vsix

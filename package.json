@@ -2,12 +2,13 @@
 	"name": "hoverlookup",
 	"displayName": "HoverLookup",
 	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"publisher": "Icaruk",
 	"type": "module",
 	"author": {
 		"name": "Icaruk"
 	},
+	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/icaruk/hoverlookup"
@@ -32,7 +33,7 @@
 		"down": "podman compose down",
 		"lint": "pnpm exec biome check --write src",
 		"prebuild": "pnpm run lint",
-		"build": "vsce package --out dist --allow-missing-repository"
+		"build": "vsce package --out dist --no-yarn"
 	},
 	"engines": {
 		"vscode": "^1.106.0"

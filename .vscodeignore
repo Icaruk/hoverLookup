@@ -1,11 +1,40 @@
-# Exclude everything by default
-**
+# Development files
+.vscode/**
+.vscode-test/**
+.git/**
+.gitignore
 
-# Then include only what we need
-!src/**
-!assets/**
-!package.json
-!README.md
-!CHANGELOG.md
-!CONFIGURATION_EXAMPLE.md
-!LICENSE
+# Build artifacts
+out/**
+
+# Source files (for ts)
+**/*.ts
+**/*.map
+
+# Node modules - exclude unnecessary files
+node_modules/**/*.md
+node_modules/**/*.ts
+node_modules/**/*.map
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/.github/**
+node_modules/**/docs/**
+node_modules/**/examples/**
+
+# Config files
+jsconfig.json
+biome.json
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+
+# Compose and container files
+compose.yml
+containers/**
+
+# Demo and test files
+**/demo*.js
+**/test*.js
+hoverlookup_demo.js
+test-simple.js

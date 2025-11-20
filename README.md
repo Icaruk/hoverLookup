@@ -2,6 +2,8 @@
 
 ![alt text](assets/hoverlookup_logo.png)
 
+![](https://img.shields.io/badge/up--npm-%20?style=flat&logo=rocket&logoColor=rgb(56%2C%20167%2C%20205)&label=updated%20with&color=rgb(74%2C%20100%2C%20206)&link=https%3A%2F%2Fgithub.com%2FIcaruk%2Fup-npm)
+
 > **Instantly see what those IDs, codes, and numbers in your code actually mean.**
 
 Stop switching between your code and database queries. HoverLookup brings your data directly into your editor—just hover over any ID, code, or variable to see the full record from your JSON database.

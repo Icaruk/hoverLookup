@@ -1,6 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as vscode from "vscode";
+import {
+	CONFIG_KEYS,
+	CONFIG_NAMESPACE,
+	CONFIG_PROPS,
+	WINDOW_MESSAGES,
+} from "../constants/config.js";
 
 let database = {};
 /** @type {string | string[]} */
@@ -14,8 +20,8 @@ const databaseSources = new Map();
  * @returns {boolean}
  */
 function isJsonDatabaseEnabled() {
-	const config = vscode.workspace.getConfiguration("hoverLookup");
-	return config.get("enableJsonDatabase") !== false; // Default to true
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	return config.get(CONFIG_PROPS.ENABLE_JSON_DATABASE) !== false; // Default to true
 }
 
 /**
@@ -130,14 +136,14 @@ function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 			const pathsList = invalidPaths.map((p) => `  • ${p}`).join("\n");
 			vscode.window
 				.showWarningMessage(
-					`HoverLookup: ${invalidPaths.length} database file(s) not found:\n${pathsList}\n\nCheck your hoverLookup.databasePaths configuration.`,
-					"Open Settings",
+					`HoverLookup: ${invalidPaths.length} database file(s) not found:\n${pathsList}\n\nCheck your ${CONFIG_KEYS.DATABASE_PATHS} configuration.`,
+					WINDOW_MESSAGES.OPEN_SETTINGS,
 				)
 				.then((selection) => {
-					if (selection === "Open Settings") {
+					if (selection === WINDOW_MESSAGES.OPEN_SETTINGS) {
 						vscode.commands.executeCommand(
 							"workbench.action.openSettings",
-							"hoverLookup.databasePaths",
+							CONFIG_KEYS.DATABASE_PATHS,
 						);
 					}
 				});
@@ -214,8 +220,8 @@ function reindexDatabase(newIdField) {
  * @returns {string[]}
  */
 function getDatabasePath() {
-	const config = vscode.workspace.getConfiguration("hoverLookup");
-	const configPaths = config.get("databasePaths");
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	const configPaths = config.get(CONFIG_PROPS.DATABASE_PATHS);
 	const paths = [];
 
 	if (

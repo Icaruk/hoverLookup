@@ -2,6 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import * as vscode from "vscode";
 import {
+	COMMAND_IDS,
+	CONFIG_KEYS,
+	CONFIG_NAMESPACE,
+	CONFIG_PROPS,
+} from "../constants/config.js";
+import {
 	DATABASE_RELOAD_TYPE,
 	getDatabasePath,
 	isJsonDatabaseEnabled,
@@ -19,7 +25,7 @@ import {
  */
 function registerReloadCommand(context) {
 	const reloadCommand = vscode.commands.registerCommand(
-		"hoverLookup.reloadDatabase",
+		COMMAND_IDS.RELOAD_DATABASE,
 		() => {
 			const dbPaths = getDatabasePath();
 			if (dbPaths && dbPaths.length > 0) {
@@ -41,7 +47,7 @@ function registerReloadCommand(context) {
  */
 function registerInitCommand(context) {
 	const initCommand = vscode.commands.registerCommand(
-		"hoverLookup.initDatabase",
+		COMMAND_IDS.INIT_DATABASE,
 		async () => {
 			if (
 				!vscode.workspace.workspaceFolders ||
@@ -132,7 +138,7 @@ function registerInitCommand(context) {
  */
 function registerReconnectMongoDBCommand(context) {
 	const reconnectMongoCommand = vscode.commands.registerCommand(
-		"hoverLookup.reconnectMongoDB",
+		COMMAND_IDS.RECONNECT_MONGODB,
 		async () => {
 			try {
 				// Disconnect first
@@ -146,7 +152,7 @@ function registerReconnectMongoDBCommand(context) {
 					);
 				} else {
 					vscode.window.showWarningMessage(
-						"HoverLookup: MongoDB URL not configured. Set hoverLookup.mongodbUrl in settings.",
+						`HoverLookup: MongoDB URL not configured. Set ${CONFIG_KEYS.MONGODB_URL} in settings.`,
 					);
 				}
 			} catch (error) {
@@ -166,9 +172,9 @@ function registerReconnectMongoDBCommand(context) {
  */
 function registerToggleLookupJsonDatabaseCommand(context) {
 	const toggleCommand = vscode.commands.registerCommand(
-		"hoverLookup.toggleLookupJsonDatabase",
+		COMMAND_IDS.TOGGLE_JSON_DATABASE,
 		async () => {
-			const config = vscode.workspace.getConfiguration("hoverLookup");
+			const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
 			const currentValue = isJsonDatabaseEnabled();
 			const currentStatus = currentValue ? "Enabled" : "Disabled";
 
@@ -201,7 +207,7 @@ function registerToggleLookupJsonDatabaseCommand(context) {
 			}
 
 			await config.update(
-				"enableJsonDatabase",
+				CONFIG_PROPS.ENABLE_JSON_DATABASE,
 				selected.value,
 				vscode.ConfigurationTarget.Workspace,
 			);
@@ -222,9 +228,9 @@ function registerToggleLookupJsonDatabaseCommand(context) {
  */
 function registerToggleLookupMongoDBCommand(context) {
 	const toggleCommand = vscode.commands.registerCommand(
-		"hoverLookup.toggleLookupMongoDB",
+		COMMAND_IDS.TOGGLE_MONGODB,
 		async () => {
-			const config = vscode.workspace.getConfiguration("hoverLookup");
+			const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
 			const currentValue = isMongoDBEnabled();
 			const currentStatus = currentValue ? "Enabled" : "Disabled";
 
@@ -257,7 +263,7 @@ function registerToggleLookupMongoDBCommand(context) {
 			}
 
 			await config.update(
-				"enableMongoDB",
+				CONFIG_PROPS.ENABLE_MONGODB,
 				selected.value,
 				vscode.ConfigurationTarget.Workspace,
 			);
@@ -283,7 +289,7 @@ function registerToggleLookupMongoDBCommand(context) {
  */
 function registerOpenSettingsCommand(context) {
 	const openSettingsCommand = vscode.commands.registerCommand(
-		"hoverLookup.openSettings",
+		COMMAND_IDS.OPEN_SETTINGS,
 		() => {
 			// Open VSCode settings and filter by HoverLookup
 			vscode.commands.executeCommand(
@@ -302,7 +308,7 @@ function registerOpenSettingsCommand(context) {
  */
 function registerClearMongoCacheCommand(context) {
 	const clearCacheCommand = vscode.commands.registerCommand(
-		"hoverLookup.clearMongoCache",
+		COMMAND_IDS.CLEAR_MONGO_CACHE,
 		async () => {
 			try {
 				const { clearMongoCache } = await import("./mongoDatabase.js");

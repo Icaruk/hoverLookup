@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { CONFIG_NAMESPACE, CONFIG_PROPS } from "../constants/config.js";
 import {
 	getDatabase,
 	getDatabaseSource,
@@ -22,8 +23,8 @@ import {
  * @returns {number} - Maximum size in characters
  */
 function getMaxHoverSize() {
-	const config = vscode.workspace.getConfiguration("hoverLookup");
-	return config.get("maxHoverSize") || 5000;
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	return config.get(CONFIG_PROPS.MAX_HOVER_SIZE) || 5000;
 }
 
 /**

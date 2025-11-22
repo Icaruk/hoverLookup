@@ -1,5 +1,6 @@
 import { MongoClient } from "mongodb";
 import * as vscode from "vscode";
+import { CONFIG_NAMESPACE, CONFIG_PROPS } from "../constants/config.js";
 
 let mongoClient = null;
 
@@ -25,8 +26,8 @@ const CACHE_TTL = 1 * 60 * 1000;
  * @returns {boolean}
  */
 function isMongoDBEnabled() {
-	const config = vscode.workspace.getConfiguration("hoverLookup");
-	return config.get("enableMongoDB") !== false; // Default to true
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	return config.get(CONFIG_PROPS.ENABLE_MONGODB) !== false; // Default to true
 }
 
 /**
@@ -34,10 +35,10 @@ function isMongoDBEnabled() {
  * @returns {{url: string, databases: Array, collections: Array}}
  */
 function getMongoConfig() {
-	const config = vscode.workspace.getConfiguration("hoverLookup");
-	const url = (config.get("mongodbUrl") || "").trim();
-	const databases = config.get("mongodbDatabases") || [];
-	const collections = config.get("mongodbCollections") || [];
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	const url = (config.get(CONFIG_PROPS.MONGODB_URL) || "").trim();
+	const databases = config.get(CONFIG_PROPS.MONGODB_DATABASES) || [];
+	const collections = config.get(CONFIG_PROPS.MONGODB_COLLECTIONS) || [];
 
 	return { url, databases, collections };
 }

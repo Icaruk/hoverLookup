@@ -68,7 +68,7 @@ function activate(context) {
 	if (databases.length > 0 && collections.length === 0 && !hideWarning) {
 		vscode.window
 			.showWarningMessage(
-				"HoverLookup: No collections defined. MongoDB will search in all collections, which may be slow. Consider configuring 'mongodbCollections' for better performance.",
+				`HoverLookup: No collections defined. MongoDB will search in all collections, which may be slow. Consider configuring "${CONFIG_PROPS.MONGODB_COLLECTIONS}" for better performance.`,
 				WINDOW_MESSAGES.OPEN_SETTINGS,
 				WINDOW_MESSAGES.DONT_SHOW_AGAIN,
 			)
@@ -76,7 +76,7 @@ function activate(context) {
 				if (selection === WINDOW_MESSAGES.OPEN_SETTINGS) {
 					vscode.commands.executeCommand(
 						"workbench.action.openSettings",
-						"@ext:Icaruk.hoverlookup mongodbCollections",
+						`@ext:Icaruk.${CONFIG_NAMESPACE} ${CONFIG_PROPS.MONGODB_COLLECTIONS}`,
 					);
 				} else if (selection === WINDOW_MESSAGES.DONT_SHOW_AGAIN) {
 					// Store a flag to not show this warning again
@@ -142,14 +142,14 @@ function activate(context) {
 						if (databases.length > 0 && collections.length === 0) {
 							vscode.window
 								.showWarningMessage(
-									"HoverLookup: No collections defined. MongoDB will search in all collections, which may be slow. Consider configuring 'mongodbCollections' for better performance.",
+									`HoverLookup: No collections defined. MongoDB will search in all collections, which may be slow. Consider configuring "${CONFIG_PROPS.MONGODB_COLLECTIONS}" for better performance.`,
 									WINDOW_MESSAGES.OPEN_SETTINGS,
 								)
 								.then((selection) => {
 									if (selection === WINDOW_MESSAGES.OPEN_SETTINGS) {
 										vscode.commands.executeCommand(
 											"workbench.action.openSettings",
-											"@ext:Icaruk.hoverlookup mongodbCollections",
+											`@ext:Icaruk.${CONFIG_NAMESPACE} ${CONFIG_PROPS.MONGODB_COLLECTIONS}`,
 										);
 									}
 								});

@@ -12,14 +12,23 @@ let mongoClient = null;
 const mongoCache = new Map();
 
 /**
- * Maximum cache size (number of entries)
+ * Get maximum cache size from configuration
+ * @returns {number} - Maximum cache size (default: 1000)
  */
-const MAX_CACHE_SIZE = 1000;
+function getMaxCacheSize() {
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	return config.get(CONFIG_PROPS.MONGODB_MAX_CACHE_SIZE) || 1000;
+}
 
 /**
- * Cache TTL in milliseconds (default: 1 minute)
+ * Get cache TTL from configuration in milliseconds
+ * @returns {number} - Cache TTL in milliseconds (default: 1 minute)
  */
-const CACHE_TTL = 1 * 60 * 1000;
+function getCacheTTL() {
+	const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+	const minutes = config.get(CONFIG_PROPS.MONGODB_CACHE_TTL_MINUTES) || 1;
+	return minutes * 60 * 1000;
+}
 
 /**
  * Check if MongoDB is enabled
@@ -104,8 +113,10 @@ async function disconnectMongo() {
  * @param {string} source - The source string (e.g., "MongoDB.database.collection")
  */
 function addToMongoCache(key, document, source) {
+	const maxCacheSize = getMaxCacheSize();
+
 	// Check if cache is full
-	if (mongoCache.size >= MAX_CACHE_SIZE) {
+	if (mongoCache.size >= maxCacheSize) {
 		// Remove oldest entry (first entry in Map)
 		const firstKey = mongoCache.keys().next().value;
 		mongoCache.delete(firstKey);
@@ -130,9 +141,11 @@ function getFromMongoCache(key) {
 		return null;
 	}
 
+	const cacheTTL = getCacheTTL();
+
 	// Check if cache entry is expired
 	const age = Date.now() - cached.timestamp;
-	if (age > CACHE_TTL) {
+	if (age > cacheTTL) {
 		mongoCache.delete(key);
 		return null;
 	}

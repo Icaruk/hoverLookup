@@ -2,7 +2,7 @@
 	"name": "hoverlookup",
 	"displayName": "HoverLookup",
 	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"publisher": "Icaruk",
 	"type": "module",
 	"author": {
@@ -141,6 +141,20 @@
 					},
 					"default": [],
 					"description": "MongoDB collections to search and their configuration. Example: [{\"collection\": \"users\", \"searchFields\": [\"id\", \"slug\"], \"project\": {\"id\": 1, \"name\": 1}}]"
+				},
+				"hoverLookup.mongodbMaxCacheSize": {
+					"type": "number",
+					"default": 1000,
+					"minimum": 100,
+					"maximum": 10000,
+					"description": "Maximum number of MongoDB documents to cache in memory. Default: 1000 entries."
+				},
+				"hoverLookup.mongodbCacheTtlMinutes": {
+					"type": "number",
+					"default": 1,
+					"minimum": 0.1,
+					"maximum": 60,
+					"description": "Time-to-live (TTL) for cached MongoDB documents in minutes. Default: 1 minute."
 				},
 				"hoverLookup.maxHoverSize": {
 					"type": "number",

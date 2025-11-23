@@ -14,6 +14,7 @@ import {
 } from "../utils/parser.js";
 import { formatTooltipHeaderMarkdown } from "../utils/tooltip.js";
 import {
+	extractObjectValues,
 	findVariableValue,
 	getValueFromDebugger,
 } from "../utils/variableResolver.js";
@@ -57,12 +58,76 @@ function truncateLargeObject(obj, maxLength = null) {
 }
 
 /**
+ * Search for a value in databases (JSON and MongoDB)
+ * @param {string|number} searchValue - The value to search for
+ * @returns {Promise<{result: any, source: string, lookupTime: number} | null>}
+ */
+async function searchInDatabases(searchValue) {
+	let result = null;
+	let source = null;
+	let lookupTime = 0;
+
+	// Try JSON database first if enabled
+	if (isJsonDatabaseEnabled()) {
+		const database = getDatabase();
+		const lookupStart = performance.now();
+		result = database[String(searchValue)];
+		source = getDatabaseSource(String(searchValue));
+		lookupTime = performance.now() - lookupStart;
+	}
+
+	// If not found in JSON database, search in MongoDB
+	if (!result) {
+		const mongoStart = performance.now();
+		const mongoResult = await searchMongoDatabase(String(searchValue));
+		lookupTime += performance.now() - mongoStart;
+		if (mongoResult) {
+			result = mongoResult.document;
+			source = mongoResult.source;
+		}
+	}
+
+	if (result) {
+		return { result, source, lookupTime };
+	}
+
+	return null;
+}
+
+/**
+ * Search using multiple values from an object
+ * Tries each value sequentially until a match is found
+ * @param {Array<string|number>} values - Array of values to search
+ * @returns {Promise<{result: any, source: string, lookupTime: number, matchedValue: string|number} | null>}
+ */
+async function searchWithMultipleValues(values) {
+	for (const value of values) {
+		const searchResult = await searchInDatabases(value);
+		if (searchResult) {
+			return {
+				...searchResult,
+				matchedValue: value,
+			};
+		}
+	}
+	return null;
+}
+
+/**
  * Hover provider for normal code editing (without debugger)
  * Detects literals and variables, looks them up in the database
  */
 class LookupHoverProvider {
 	async provideHover(document, position) {
 		try {
+			// Check if debugger is active
+			const isDebugging = vscode.debug.activeDebugSession !== undefined;
+			if (isDebugging) {
+				console.log(
+					"[HoverLookup] HoverProvider called during debug session - this will work alongside DebugAdapter",
+				);
+			}
+
 			const line = document.lineAt(position.line).text;
 			const char = position.character;
 
@@ -96,60 +161,73 @@ class LookupHoverProvider {
 			let result = null;
 			let source = null;
 			let lookupTime = 0;
+			let matchedValue = null;
 
-			// Try JSON database first if enabled
-			if (isJsonDatabaseEnabled()) {
-				const database = getDatabase();
-				const lookupStart = performance.now();
-				result = database[word];
-				source = getDatabaseSource(word);
-				lookupTime = performance.now() - lookupStart;
+			// First, try to search with the literal value (string or number)
+			const literalSearch = await searchInDatabases(word);
+			if (literalSearch) {
+				result = literalSearch.result;
+				source = literalSearch.source;
+				lookupTime = literalSearch.lookupTime;
+				matchedValue = word;
 			}
 
-			// If not found in JSON database, search in MongoDB
-			if (!result) {
-				const mongoStart = performance.now();
-				const mongoResult = await searchMongoDatabase(word);
-				lookupTime += performance.now() - mongoStart;
-				if (mongoResult) {
-					result = mongoResult.document;
-					source = mongoResult.source;
-				}
-			}
-
+			// If not found and it's a variable, resolve its value
 			if (!result && isVariable) {
+				console.log(`[HoverLookup] Resolving variable: ${word}`);
 				let debugValue = await getValueFromDebugger(word);
 
 				// If debugger is not active, try static analysis
 				if (debugValue === null) {
+					console.log(
+						`[HoverLookup] Debugger not active, using static analysis`,
+					);
 					const variableValue = findVariableValue(
 						document,
 						word,
 						position.line,
 					);
 					if (variableValue !== null) {
-						debugValue = String(variableValue);
+						debugValue = variableValue;
 					}
+				} else {
+					console.log(
+						`[HoverLookup] Got value from debugger: ${typeof debugValue} - ${JSON.stringify(debugValue).substring(0, 100)}`,
+					);
 				}
 
 				if (debugValue !== null) {
-					// Try JSON database first if enabled
-					if (isJsonDatabaseEnabled()) {
-						const database = getDatabase();
-						const variableLookupStart = performance.now();
-						result = database[String(debugValue)];
-						source = getDatabaseSource(String(debugValue));
-						lookupTime += performance.now() - variableLookupStart;
-					}
+					// Check if the value is an object
+					if (typeof debugValue === "object" && debugValue !== null) {
+						// Extract all values from the object
+						const objectValues = extractObjectValues(debugValue);
 
-					// If not found in JSON database, search in MongoDB
-					if (!result) {
-						const mongoStart = performance.now();
-						const mongoResult = await searchMongoDatabase(String(debugValue));
-						lookupTime += performance.now() - mongoStart;
-						if (mongoResult) {
-							result = mongoResult.document;
-							source = mongoResult.source;
+						if (objectValues.length > 0) {
+							console.log(
+								`[HoverLookup] Object detected with ${objectValues.length} searchable values: ${JSON.stringify(objectValues)}`,
+							);
+
+							// Search with each value until we find a match
+							const multiSearch = await searchWithMultipleValues(objectValues);
+							if (multiSearch) {
+								result = multiSearch.result;
+								source = multiSearch.source;
+								lookupTime += multiSearch.lookupTime;
+								matchedValue = multiSearch.matchedValue;
+
+								console.log(
+									`[HoverLookup] Found match using object value: ${matchedValue}`,
+								);
+							}
+						}
+					} else {
+						// It's a primitive value, search directly
+						const valueSearch = await searchInDatabases(debugValue);
+						if (valueSearch) {
+							result = valueSearch.result;
+							source = valueSearch.source;
+							lookupTime += valueSearch.lookupTime;
+							matchedValue = debugValue;
 						}
 					}
 				}
@@ -167,11 +245,18 @@ class LookupHoverProvider {
 
 				const _lookupTime = +lookupTime.toFixed(3);
 
+				// Only pass matchedValue if it's different from word (i.e., it's from an object)
+				const headerMatchedValue =
+					matchedValue !== null && matchedValue !== word
+						? matchedValue
+						: undefined;
+
 				// Header with separator
 				const header = formatTooltipHeaderMarkdown({
 					word,
 					lookupTimeMs: _lookupTime,
 					source,
+					matchedValue: headerMatchedValue,
 				});
 				markdown.appendMarkdown(header);
 

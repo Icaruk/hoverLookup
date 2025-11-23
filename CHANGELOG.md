@@ -4,25 +4,45 @@ All notable changes to the "hoverLookup" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.5.0] - 2024-11-23
+
+### Added
+
+- Hover over variables containing objects will perform a lookup using every value in order:
+	- When hovering over an object like `{id: "1234", name: "John", age: 23}`, the extension searches sequentially using each value ("abc", "John", 23) until finding a match
+	- Works in both debug mode and normal editing mode
+	- Works with single-line and multi-line object declarations
+- MongoDB cache size and TTL are now configurable via settings:
+	- `hoverLookup.mongodbMaxCacheSize` - Maximum number of cached documents (default: 1000, range: 100-10000)
+	- `hoverLookup.mongodbCacheTtlMinutes` - Cache time-to-live in minutes (default: 1, range: 0.1-60)
+
+### Fixed
+
+- MongoDB lookup now works for dynamic values in debugger hover (e.g., computed variables, random values)
+	- Implemented background async search when value is not cached
+	- First hover triggers MongoDB search, second hover shows cached result
+
+
+
 ## [0.4.0] - 2024-11-14
 
 ### Fixed
 
-- Crash caused by missing MongoDB dependencies
+- Crash caused by missing MongoDB dependencies.
 
 ## [0.3.0] - 2024-11-13
 
 ### Added
 
-- Added MongoDB support
-	- Added command to reconnect to MongoDB
-	- Added setting to configure MongoDB connection URL
-	- Added setting to configure MongoDB databases to search
-	- Added setting to configure MongoDB collections to search
-	- Added setting to configure MongoDB projection (select specific fields)
-	- Added command to clear MongoDB cache
-- Added support for multiple lookup-database.json files
-- Added setting to configure maximum hover tooltip size
-- Added command to toggle MongoDB lookup
-- Added command to toggle JSON database lookup
-- Added command to open extension settings
+- Added MongoDB support.
+	- Added command to reconnect to MongoDB.
+	- Added setting to configure MongoDB connection URL.
+	- Added setting to configure MongoDB databases to search.
+	- Added setting to configure MongoDB collections to search.
+	- Added setting to configure MongoDB projection (select specific fields).
+	- Added command to clear MongoDB cache.
+- Added support for multiple lookup-database.json files.
+- Added setting to configure maximum hover tooltip size.
+- Added command to toggle MongoDB lookup.
+- Added command to toggle JSON database lookup.
+- Added command to open extension settings.

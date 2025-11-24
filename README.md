@@ -6,7 +6,20 @@
 
 > **Instantly see what those IDs, codes, and numbers in your code actually mean.**
 
-Stop switching between your code and database queries. HoverLookup brings your data directly into your editor—just hover over any ID, code, or variable to see the full record from your JSON database.
+Stop switching between your code and database queries.
+Get your data hovering over any ID, code, or variable to see the full record from:
+
+- Local JSON database:
+![alt text](demo/tooltip_database_json.png)
+
+- MongoDB:
+![alt text](demo/tooltip_database_mongodb.png)
+
+Works in the debugger too:
+
+![alt text](demo/tooltip_debugger_mongodb.gif)
+
+
 
 ---
 
@@ -47,14 +60,14 @@ With HoverLookup, you **hover** and instantly see:
 - **Debug integration**: Works seamlessly with VSCode's debugger
 - **MongoDB support**: Query MongoDB collections on-demand (configurable per collection)
 
-### JSON database
-1. Run `HoverLookup: Initialize Database` command
-2. Add your data to the JSON file
-3. Start hovering stuff
+### Multiple databases
+
+- Local JSON database
+- MongoDB
 
 ---
 
-## Quick Start
+## Quick Start for local JSON database
 
 ### 1. Initialize the Database
 
@@ -103,17 +116,33 @@ const employee = 42;           // Hover over "42" → see Jane Smith's info
 const order = "ORD-2024-001";  // Hover over "ORD-2024-001" → see order details
 ```
 
+## Quick Start for MongoDB
+
+### 1. Configure MongoDB Connection
+
+Open your VSCode settings and add your MongoDB connection URL:
+
+```json
+{
+  "hoverLookup.mongodbUrl": "mongodb://localhost:27017"
+}
+```
+
+### 2. Configure Collections to Search
+
+Add the collections you want to search in your MongoDB database:
+
+```json
+{
+  "hoverLookup.mongodbCollections": [
+    {"collection": "users", "searchFields": ["id", "email"]},
+    {"collection": "products", "searchFields": ["sku", "code"]}
+  ]
+}
+```
+
 ---
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| **Initialize Database** | Create a new `lookup-database.json` file with example data |
-| **Reload Database** | Manually reload the database from the JSON file |
-| **Change ID Field** | Change lookup field(s). Use comma-separated values for multiple fields (e.g., `id, userId, code`) |
-
----
 
 ## Advanced Configuration
 
@@ -127,36 +156,19 @@ Set a custom path in your VSCode settings:
 }
 ```
 
-### Multiple ID Fields
-
-Mix different types of objects in the same database by using multiple ID fields:
-
-```json
-{
-  "idField": ["id", "code", "sku"],
-  "data": [
-    {"id": 1, "name": "User Record", "email": "user@example.com"},
-    {"code": "ABC", "name": "Product Code", "category": "Electronics"},
-    {"sku": "PROD-001", "name": "Widget", "price": 29.99}
-  ]
-}
-```
-
 The extension will try each field in order until it finds a match. Use the **Change ID Field** command to modify the field list (comma-separated: `id, code, sku`).
 
 ---
 
 ## How It Works
 
-HoverLookup operates in two intelligent modes:
+HoverLookup operates in two modes:
 
-### Normal Editing Mode
-Detects literals and variables using static analysis, then looks them up in your database.
+- Normal Editing Mode
+  - Detects literals and variables using static analysis, then looks them up in your databases.
 
-### Debug Mode
-Intercepts the debugger's variable evaluation, extracts runtime values, and enriches the hover with database information.
-
-**Both modes work seamlessly together** to give you the information you need, when you need it.
+- Debug Mode
+  - Intercepts the debugger's variable evaluation, extracts runtime values, and enriches the hover with databases information.
 
 ---
 
@@ -187,19 +199,6 @@ graph TD
     style F fill:#2196F3,color:#fff
     style G fill:#2196F3,color:#fff
 ```
-
-<details>
-<summary><b>Module Organization</b></summary>
-
-- **`extension.js`** - Main entry point (63 lines)
-- **`utils/database.js`** - Database loading, reindexing, and path management
-- **`utils/parser.js`** - String/number extraction and range detection
-- **`utils/variableResolver.js`** - Variable value resolution (debugger + static analysis)
-- **`utils/commands.js`** - Command registration
-- **`providers/hoverProvider.js`** - Hover provider implementation
-- **`adapters/debugAdapter.js`** - Debug adapter tracker classes
-
-</details>
 
 ---
 

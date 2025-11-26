@@ -9,13 +9,13 @@
 Stop switching between your code and database queries.
 Get your data hovering over any ID, code, or variable to see the full record from:
 
-- Local JSON database:
-![alt text](demo/tooltip_database_json.png)
+- Local JSON database:  
+![alt text](demo/tooltip_database_json.png)  
 
-- MongoDB:
-![alt text](demo/tooltip_database_mongodb.png)
+- MongoDB:  
+![alt text](demo/tooltip_database_mongodb.png)  
 
-Works in the debugger too:
+Works in the debugger too:   
 
 ![alt text](demo/tooltip_debugger_mongodb.gif)
 

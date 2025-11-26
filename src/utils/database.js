@@ -150,8 +150,8 @@ function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 		}
 
 		if (!loadedAny) {
-			vscode.window.showErrorMessage(
-				`No valid database files found. Use the "Initialize Database" command to create one.`,
+			console.log(
+				`[HoverLookup] No valid database files found. Use the "Initialize Database" command to create one.`,
 			);
 			return false;
 		}

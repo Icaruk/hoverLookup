@@ -2,7 +2,7 @@
 	"name": "hoverlookup",
 	"displayName": "HoverLookup",
 	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"publisher": "Icaruk",
 	"type": "module",
 	"author": {

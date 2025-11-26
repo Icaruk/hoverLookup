@@ -87,9 +87,7 @@ async function connectMongo() {
 		console.log("[HoverLookup] Connected to MongoDB");
 		return mongoClient;
 	} catch (error) {
-		vscode.window.showErrorMessage(
-			`HoverLookup: Failed to connect to MongoDB: ${error.message}`,
-		);
+		console.log(`[HoverLookup] Failed to connect to MongoDB: ${error.message}`);
 		mongoClient = null;
 		return null;
 	}
@@ -230,7 +228,7 @@ async function searchMongoDatabase(searchValue) {
 
 					if (document) {
 						const dbDisplay = dbName ? `${dbName}` : "default";
-						const source = `MongoDB.${dbDisplay}`;
+						const source = `MongoDB.${dbDisplay}.${collectionName}`;
 						console.log(
 							`[HoverLookup] Found document in MongoDB collection: ${dbDisplay}.${collectionName}`,
 						);

@@ -4,6 +4,13 @@ All notable changes to the "hoverLookup" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.5.2] - 2024-11-26
+
+### Fixed
+
+- Changed error messages to console logs when JSON database is not found or MongoDB connection fails.
+- MongoDB source was not including collection name. Now the format is `MongoDB.{database}.{collection}`.
+
 ## [0.5.0] - 2024-11-23
 
 ### Added

@@ -1,13 +1,13 @@
 # HoverLookup
 
-![alt text](assets/hoverlookup_logo.png)
+<img src="assets/hoverlookup_logo.png" style="width: 100px;" />
 
 ![](https://img.shields.io/badge/up--npm-%20?style=flat&logo=rocket&logoColor=rgb(56%2C%20167%2C%20205)&label=updated%20with&color=rgb(74%2C%20100%2C%20206)&link=https%3A%2F%2Fgithub.com%2FIcaruk%2Fup-npm)
 
-> **Instantly see what those IDs, codes, and numbers in your code actually mean.**
+#### Instantly see what those IDs, codes, and numbers mean by hovering over them.
 
-Stop switching between your code and database queries.
-Get your data hovering over any ID, code, or variable to see the full record from:
+Stop switching between your code and database queries. 
+Supported databases:
 
 - Local JSON database:  
 ![alt text](demo/tooltip_database_json.png)  
@@ -15,8 +15,7 @@ Get your data hovering over any ID, code, or variable to see the full record fro
 - MongoDB:  
 ![alt text](demo/tooltip_database_mongodb.png)  
 
-Works in the debugger too:   
-
+Works in the debugger too:  
 ![alt text](demo/tooltip_debugger_mongodb.gif)
 
 
@@ -135,8 +134,24 @@ Add the collections you want to search in your MongoDB database:
 ```json
 {
   "hoverLookup.mongodbCollections": [
-    {"collection": "users", "searchFields": ["id", "email"]},
-    {"collection": "products", "searchFields": ["sku", "code"]}
+    {
+      "collection": "users",
+      "searchFields": ["id", "email"],
+      "project": {
+        "name": 1,
+        "email": 1,
+        "status": 1
+      }
+    },
+    {
+      "collection": "products",
+      "searchFields": ["sku", "code"],
+      "project": {
+        "name": 1,
+        "price": 1,
+        "stock": 1
+      }
+    }
   ]
 }
 ```
@@ -156,7 +171,7 @@ Set a custom path in your VSCode settings:
 }
 ```
 
-The extension will try each field in order until it finds a match. Use the **Change ID Field** command to modify the field list (comma-separated: `id, code, sku`).
+The extension will try each field in order until it finds a match.
 
 ---
 
@@ -199,13 +214,6 @@ graph TD
     style F fill:#2196F3,color:#fff
     style G fill:#2196F3,color:#fff
 ```
-
----
-
-## Requirements
-
-- **VSCode** 1.60.0 or higher
-- A `lookup-database.json` file in your workspace (created automatically with the Init command)
 
 ---
 

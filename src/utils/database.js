@@ -133,20 +133,10 @@ function loadLocalDatabase(filePaths, reloadType = DATABASE_RELOAD_TYPE.INIT) {
 
 		// Show warnings for invalid paths
 		if (invalidPaths.length > 0) {
-			const pathsList = invalidPaths.map((p) => `  • ${p}`).join("\n");
-			vscode.window
-				.showWarningMessage(
-					`HoverLookup: ${invalidPaths.length} database file(s) not found:\n${pathsList}\n\nCheck your ${CONFIG_KEYS.DATABASE_PATHS} configuration.`,
-					WINDOW_MESSAGES.OPEN_SETTINGS,
-				)
-				.then((selection) => {
-					if (selection === WINDOW_MESSAGES.OPEN_SETTINGS) {
-						vscode.commands.executeCommand(
-							"workbench.action.openSettings",
-							CONFIG_KEYS.DATABASE_PATHS,
-						);
-					}
-				});
+			const pathsList = invalidPaths.map((p) => `  • ${p}\n`).join("\n");
+			console.log(
+				`HoverLookup: ${invalidPaths.length} database file(s) not found:\n${pathsList}\n\nCheck your ${CONFIG_KEYS.DATABASE_PATHS} configuration.`,
+			);
 		}
 
 		if (!loadedAny) {
@@ -261,7 +251,7 @@ async function loadCombinedDatabase(
 		// Load JSON files (MongoDB is now queried on-demand in hoverProvider)
 		return loadLocalDatabase(filePaths, reloadType);
 	} catch (error) {
-		vscode.window.showErrorMessage(`Error loading database: ${error.message}`);
+		console.log(`Error loading database: ${error.message}`);
 		return false;
 	}
 }

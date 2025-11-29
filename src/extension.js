@@ -9,6 +9,7 @@ import {
 } from "./constants/config.js";
 import { LookupHoverProvider } from "./providers/hoverProvider.js";
 import { registerAllCommands } from "./utils/commands.js";
+import { eventAffectsConfiguration } from "./utils/configuration.js";
 import {
 	getDatabasePath,
 	loadCombinedDatabase,
@@ -106,14 +107,9 @@ function activate(context) {
 	// Watch for configuration changes
 	const configWatcher = vscode.workspace.onDidChangeConfiguration(
 		async (event) => {
-			if (
-				event.affectsConfiguration(CONFIG_KEYS.DATABASE_PATHS) ||
-				event.affectsConfiguration(CONFIG_KEYS.MONGODB_URL) ||
-				event.affectsConfiguration(CONFIG_KEYS.MONGODB_COLLECTIONS) ||
-				event.affectsConfiguration(CONFIG_KEYS.MONGODB_DATABASES)
-			) {
+			if (eventAffectsConfiguration.anyDatabase(event)) {
 				// Reload JSON database if paths changed
-				if (event.affectsConfiguration(CONFIG_KEYS.DATABASE_PATHS)) {
+				if (eventAffectsConfiguration.jsonDatabasePaths(event)) {
 					const newDbPaths = getDatabasePath();
 					if (newDbPaths && newDbPaths.length > 0) {
 						loadCombinedDatabase(newDbPaths);
@@ -122,18 +118,14 @@ function activate(context) {
 				}
 
 				// Reconnect MongoDB if MongoDB config changed
-				if (
-					event.affectsConfiguration(CONFIG_KEYS.MONGODB_URL) ||
-					event.affectsConfiguration(CONFIG_KEYS.MONGODB_COLLECTIONS) ||
-					event.affectsConfiguration(CONFIG_KEYS.MONGODB_DATABASES)
-				) {
+				if (eventAffectsConfiguration.mongoDb(event)) {
 					console.log(
 						"[HoverLookup] MongoDB configuration changed, reconnecting...",
 					);
 					await disconnectMongo();
 
 					// Check if databases are configured but no collections
-					if (event.affectsConfiguration(CONFIG_KEYS.MONGODB_DATABASES)) {
+					if (eventAffectsConfiguration.mongoDbPaths(event)) {
 						const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
 						const databases = config.get(CONFIG_PROPS.MONGODB_DATABASES) || [];
 						const collections =

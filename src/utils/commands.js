@@ -28,6 +28,7 @@ function registerReloadCommand(context) {
 		COMMAND_IDS.RELOAD_DATABASE,
 		() => {
 			const dbPaths = getDatabasePath();
+
 			if (dbPaths && dbPaths.length > 0) {
 				loadDatabase(dbPaths, DATABASE_RELOAD_TYPE.MANUAL_RELOAD);
 			} else {

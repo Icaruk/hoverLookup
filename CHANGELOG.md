@@ -4,14 +4,20 @@ All notable changes to the "hoverLookup" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [0.5.2] - 2024-11-26
+## [0.5.3] - 2025-11-29
+
+### Fixed
+
+- Removed warning message about missing collections when MongoDB is not enabled. Message is still shown in logs.
+
+## [0.5.2] - 2025-11-26
 
 ### Fixed
 
 - Changed error messages to console logs when JSON database is not found or MongoDB connection fails.
 - MongoDB source was not including collection name. Now the format is `MongoDB.{database}.{collection}`.
 
-## [0.5.0] - 2024-11-23
+## [0.5.0] - 2025-11-23
 
 ### Added
 
@@ -31,13 +37,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 
 
-## [0.4.0] - 2024-11-14
+## [0.4.0] - 2025-11-14
 
 ### Fixed
 
 - Crash caused by missing MongoDB dependencies.
 
-## [0.3.0] - 2024-11-13
+## [0.3.0] - 2025-11-13
 
 ### Added
 

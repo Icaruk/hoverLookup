@@ -5,7 +5,6 @@ import {
 	CONFIG_KEYS,
 	CONFIG_NAMESPACE,
 	CONFIG_PROPS,
-	WINDOW_MESSAGES,
 } from "../constants/config.js";
 
 let database = {};

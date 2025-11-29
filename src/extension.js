@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { LookupDebugAdapterTrackerFactory } from "./adapters/debugAdapter.js";
 import {
-	CONFIG_KEYS,
 	CONFIG_NAMESPACE,
 	CONFIG_PROPS,
 	STATE_KEYS,

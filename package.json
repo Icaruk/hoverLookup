@@ -2,7 +2,7 @@
 	"name": "hoverlookup",
 	"displayName": "HoverLookup",
 	"description": "Instantly see what IDs, codes, and numbers in your code mean by hovering over them",
-	"version": "0.5.3",
+	"version": "0.5.4",
 	"publisher": "Icaruk",
 	"type": "module",
 	"author": {
@@ -36,7 +36,7 @@
 		"build": "vsce package --out dist --no-yarn"
 	},
 	"engines": {
-		"vscode": "^1.106.0"
+		"vscode": "^1.105.0"
 	},
 	"categories": [
 		"Other",
@@ -173,7 +173,7 @@
 		"@biomejs/biome": "2.3.7",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "24.10.1",
-		"@types/vscode": "^1.106.1",
+		"@types/vscode": "^1.105.0",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
 		"eslint": "^9.39.1"

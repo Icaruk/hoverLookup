@@ -1,4 +1,4 @@
-import { CONFIG_KEYS } from "../constants/config";
+import { CONFIG_KEYS } from "../constants/config.js";
 
 export const eventAffectsConfiguration = {
 	/**

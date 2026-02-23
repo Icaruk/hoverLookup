@@ -8,18 +8,6 @@
 }
 ```
 
-## Multiple
-
-```json
-{
-  "hoverLookup.databasePaths": [
-    "lookup-database.json",
-    "lookup-database-users.json",
-    "lookup-database-orders.json"
-  ]
-}
-```
-
 ## Absolute routes
 
 ```json
@@ -33,7 +21,7 @@
 
 ## Relative routes
 
-Las rutas relativas se resuelven desde la raíz del workspace:
+Relative routes resolves from workspace root
 
 ```json
 {
